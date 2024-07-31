@@ -1,0 +1,68 @@
+import pandas as pd
+import numpy as np
+from pmdarima import auto_arima
+from statsmodels.tsa.seasonal import seasonal_decompose
+import matplotlib.pyplot as plt
+
+def find_best_m(time_series, max_m):
+    best_aic = np.inf
+    best_m = None
+    results = {}
+    
+    # Prueba varios valores de m desde 1 hasta max_m
+    for m in range(1, max_m + 1):
+        try:
+            model = auto_arima(time_series, start_p=1, start_q=1,
+                               test='adf',  # Prueba de Dickey-Fuller Aumentada
+                               seasonal=True, m=m, trace=False,
+                               error_action='ignore',  
+                               suppress_warnings=True, 
+                               stepwise=True)
+            aic = model.aic()
+            results[m] = aic
+            if aic < best_aic:
+                best_aic = aic
+                best_m = m
+        except Exception as e:
+            print(f"Error with m={m}: {str(e)}")
+            continue
+    
+    return best_m, results
+
+# Cargar el DataFrame principal
+df = pd.read_csv("sales_ecom_history.csv")
+
+# Convertir la columna 'date' a tipo datetime
+df['date'] = pd.to_datetime(df['date'], errors='coerce', format='%Y-%m-%d')
+
+# Asegurarse de que 'date' esté configurada como índice
+df.set_index('date', inplace=True)
+
+# Ordenar el DataFrame por índice
+df = df.sort_index()
+
+# Verificar y establecer la frecuencia de los datos
+if df.index.freq is None:
+    df = df.asfreq('D')
+
+# Llamar a la función para encontrar el mejor m
+best_m, results = find_best_m(df['turnover'], max_m=30)
+
+print(f"Mejor m: {best_m}")
+print("Resultados:")
+for m, aic in results.items():
+    print(f"m={m}: AIC={aic}")
+
+# Descomposición de la serie temporal con el mejor periodo encontrado
+result = seasonal_decompose(df['turnover'], model='additive', period=best_m)
+
+# Extraer la estacionalidad
+seasonal = result.seasonal
+
+# Visualizar la estacionalidad
+plt.figure(figsize=(12, 6))
+plt.plot(seasonal)
+plt.title('Componente Estacional de la Serie Temporal')
+plt.xlabel('Fecha')
+plt.ylabel('Estacionalidad')
+plt.show()
