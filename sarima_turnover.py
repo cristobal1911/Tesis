@@ -96,7 +96,25 @@ print(f'Valor p: {result[1]:.4f}')
 print('Valores Críticos:')
 for key, value in result[4].items():
     print(f'   {key}: {value:.4f}')
+    
+#%% Dividir los datos en conjuntos de entrenamiento y prueba
 
+# Utilizar los últimos 28 días para prueba
+test_size = 28
+train, test = df['turnover'].iloc[:-test_size], df['turnover'].iloc[-test_size:]
+
+#%% Identificar los mejores parámetros para SARIMA
+
+# Usar auto_arima para identificar los parámetros óptimos
+auto_arima_model = auto_arima(train, 
+                              seasonal=True, 
+                              m=28,  # Ajustar según el análisis de patrones estacionales
+                              trace=True, 
+                              error_action='ignore', 
+                              suppress_warnings=True, 
+                              stepwise=True)
+
+print(auto_arima_model.summary())
 
 #%% Transformación Logarítmica
 # Aplicar transformación logarítmica para estabilizar la varianza, si la serie es positiva
