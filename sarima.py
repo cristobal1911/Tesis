@@ -22,8 +22,6 @@ df = df.dropna(subset=['turnover'])
 # Añadir columnas para el mes, el año y el día de la semana
 df['month'] = df.index.month
 df['year'] = df.index.year
-df['day_of_week'] = df.index.dayofweek  # 0 = Lunes, 6 = Domingo
-df['month_year'] = df.index.to_period('M')
 
 # Guardar una copia de la serie original
 original_df = df.copy()
